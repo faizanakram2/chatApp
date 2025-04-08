@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>💬 Modern Chat App</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #667eea, #764ba2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .chat-wrapper {
+      background-color: #fff;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    input {
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #667eea;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+      background: #667eea;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #5a67d8;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    li {
+      background: #f3f3f3;
+      margin-bottom: 8px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .notification {
+      background-color: #fffbe6;
+      color: #8a6d3b;
+    }
+
+    @media (max-width: 500px) {
+      .chat-wrapper {
+        margin: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+    <div id="login-screen">
+        <h2>Login to Chat</h2>
+        <input id="login-username" placeholder="Enter your name" />
+        <button onclick="login()">Login</button>
+      </div>
+      
+      <div id="chat-screen" style="display:none;">
+      </div>
+      
+  <div class="chat-wrapper">
+    <h2>💬 Chat Room</h2>
+
+    <div class="input-group">
+        <input id="username" placeholder="Your Name" />
+
+      <input id="room" placeholder="Enter Room Name" />
+      <input id="message" placeholder="Type a message..." />
+    </div>
+
+    <div class="button-group">
+      <button onclick="joinRoom()">Join Room</button>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <ul id="messages"></ul>
+  </div>
+
+  <script>
+    let currentUser = '';
+
+function login() {
+  const nameInput = document.getElementById('login-username');
+  const username = nameInput.value.trim();
+  if (!username) return alert("Enter your name");
+
+  currentUser = username;
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'block';
+
+  document.getElementById('username').value = username;
+}
+
+function logout() {
+  currentUser = '';
+  window.location.reload(); 
+}
+
+    const socket = io('http://localhost:3000');
+
+    socket.on('receiveMessage', (data) => {
+      const li = document.createElement('li');
+      li.innerText = `${data.sender || 'Anonymous'}: ${data.message}`;
+      document.getElementById('messages').appendChild(li);
+      scrollToBottom();
+    });
+
+    socket.on('notification', (data) => {
+      const li = document.createElement('li');
+      li.classList.add('notification');
+      li.innerText = `🔔 ${data}`;
+      document.getElementById('messages').appendChild(li);
+      scrollToBottom();
+    });
+
+    function joinRoom() {
+      const room = document.getElementById('room').value.trim();
+      if (room) {
+        socket.emit('joinRoom', room);
+      }
+    }
+
+    function sendMessage() {
+  const room = document.getElementById('room').value.trim();
+  const message = document.getElementById('message').value.trim();
+  const sender = document.getElementById('username').value.trim() || 'Anonymous';
+
+  if (room && message) {
+    socket.emit('sendMessage', { room, message, sender });
+    document.getElementById('message').value = '';
+  }
+}
+
+
+    function scrollToBottom() {
+      const msgBox = document.getElementById('messages');
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
